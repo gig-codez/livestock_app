@@ -27,18 +27,13 @@ class CattleTracker with ChangeNotifier {
     return _currentLocation;
   }
 
-  void _setCurrentLocation() {
-    Geolocator.getPositionStream().listen((Position position) {
-      _currentLocation = LatLng(position.latitude, position.longitude);
-      notifyListeners();
-    });
-  }
+  void _setCurrentLocation() {}
 
   void startTrackingCattle() {
     _positionStream =
         Geolocator.getPositionStream().listen((Position position) {
-      _currentLocation = LatLng(position.latitude, position.longitude);
-      notifyListeners();
+      // _currentLocation = LatLng(position.latitude, position.longitude);
+      // notifyListeners();
       if (farm != null) {
         for (final cattle in cattleLocations) {
           if (!farm!.isWithinFarmBounds(cattle)) {

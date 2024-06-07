@@ -47,6 +47,7 @@ dependencies:
   ripple_wave: ^0.1.4
   geolocator: ^12.0.0
   flutter_local_notifications: ^17.1.2
+  sliding_up_panel: ^2.0.0+1
 
 dev_dependencies:
   flutter_test:
