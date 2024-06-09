@@ -1,15 +1,21 @@
+import '/models/cordinates_model.dart';
+import '/services/data_service.dart';
+
 import '/exports/exports.dart';
 
 class DataController with ChangeNotifier {
   // data
-  String _data = 'data';
+  Feed _data = Feed.fromJson({});
 
   // getters
-  String get data => _data;
+  Feed get data => _data;
 
   // setters
-  void setData(String data) {
-    _data = data;
-    notifyListeners();
+  void setData() {
+    DataService().getData().then((value) {
+      _data = value;
+      notifyListeners();
+    });
+    // notifyListeners();
   }
 }

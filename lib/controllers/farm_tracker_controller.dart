@@ -4,8 +4,12 @@ import '../models/farm_model.dart';
 import '/exports/exports.dart';
 
 class CattleTracker with ChangeNotifier {
+  CattleTracker() {
+    setCurrentLocation();
+  }
   Farm? farm;
-  List<LatLng> cattleLocations = [];
+  List<LatLng> _cattleLocations = [];
+  List<LatLng> get cattleLocations => _cattleLocations;
   StreamSubscription<Position>? _positionStream;
 
   void setFarm(LatLngBounds farmBounds) {
@@ -14,34 +18,23 @@ class CattleTracker with ChangeNotifier {
   }
 
   void addCattle(LatLng location) {
-    if (farm != null && farm!.isWithinFarmBounds(location)) {
-      cattleLocations.add(location);
-      notifyListeners();
-    }
+    // if (farm != null && farm!.isWithinFarmBounds(location)) {
+    _cattleLocations.add(location);
+    notifyListeners();
+    // }
   }
 
   // Add the following getter to the CattleTracker class
-  LatLng _currentLocation = LatLng(0, 0);
+  LatLng _currentLocation = const LatLng(0, 0);
   LatLng get currentLocation {
-    _setCurrentLocation();
+    // _setCurrentLocation();
     return _currentLocation;
   }
 
-  void _setCurrentLocation() {}
-
-  void startTrackingCattle() {
-    _positionStream =
-        Geolocator.getPositionStream().listen((Position position) {
-      // _currentLocation = LatLng(position.latitude, position.longitude);
-      // notifyListeners();
-      if (farm != null) {
-        for (final cattle in cattleLocations) {
-          if (!farm!.isWithinFarmBounds(cattle)) {
-            // Trigger notification for cattle outside farm bounds
-            print('Cattle at $cattle has left the farm bounds!');
-          }
-        }
-      }
+  void setCurrentLocation() {
+    Geolocator.getCurrentPosition().then((Position position) {
+      _currentLocation = LatLng(position.latitude, position.longitude);
+      notifyListeners();
     });
   }
 

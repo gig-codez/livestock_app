@@ -1,7 +1,6 @@
 // ignore_for_file: library_private_types_in_public_api
 
 import 'dart:async';
-import 'dart:typed_data';
 
 import 'package:livestock/screens/home/track_cattle.dart';
 
@@ -29,101 +28,80 @@ class _FarmDimensionsState extends State<FarmDimensions> {
   @override
   void dispose() {
     super.dispose();
-    // Provider.of<CattleTracker>(context, listen: false).dispose();
+    Provider.of<CattleTracker>(context, listen: false).dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Column(
-        children: [
-          StreamBuilder(
-            stream: Geolocator.getPositionStream(),
-            builder: (context, snapshot) {
-              Position? dim = snapshot.data;
-              return snapshot.hasData
-                  ? Expanded(
-                      flex: 3,
-                      child: GoogleMap(
-                        onMapCreated: (GoogleMapController controller) {
-                          _controller.complete(controller);
-                        },
-                        onTap: _setFarmBounds,
-                        // mapType: MapType.satellite,
-                        markers: _getFarmMarkers(),
-                        circles: _getFarmCircles(),
-                        initialCameraPosition: CameraPosition(
-                          bearing: 192.8334901395799,
-                          target: dim != null
-                              ? LatLng(dim.latitude, dim.longitude)
-                              : LatLng(0, 0),
-                          tilt: 59.440717697143555,
-                          zoom: 19.151926040649414,
-                        ),
-                      ),
-                    )
-                  : const Center(
-                      child: CircularProgressIndicator(
-                        strokeWidth: 10,
-                      ),
-                    );
-            },
-          ),
-          Expanded(
-              flex: 5,
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(8, 2, 8, 10),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.all(8.0),
-                      child: Text.rich(
-                        TextSpan(
-                          text: 'Farm Dimensions',
-                          style: Theme.of(context).textTheme.titleLarge!.apply(
-                                fontWeightDelta: 10,
-                              ),
-                          children: [
-                            TextSpan(
-                              text:
-                                  '\n(We need just the farm diagonal i.e the south west of the farm and northeast of the farm.)',
-                              style: Theme.of(context).textTheme.bodyLarge,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    ListTile(
-                      title: Text(
-                        'Southwest of the farm',
-                        style: Theme.of(context).textTheme.titleLarge,
-                      ),
-                      subtitle: Text(
-                        _selectedLocation == null
-                            ? 'Select the farm bounds on the map'
-                            : '$_selectedLocation',
-                        style: Theme.of(context).textTheme.labelLarge,
-                      ),
-                    ),
-                    ListTile(
-                      title: Text(
-                        'Northeast of the farm',
-                        style: Theme.of(context).textTheme.titleLarge,
-                      ),
-                      subtitle: Text(
-                        _selectedLocation == null
-                            ? 'Select the farm bounds on the map'
-                            : '$_selectedLocation',
-                        style: Theme.of(context).textTheme.labelLarge,
-                      ),
-                    ),
-                    // Text('Selected Location: $_selectedLocation'),
-                  ],
+      appBar: AppBar(),
+      body: Consumer<CattleTracker>(builder: (context, controller, c) {
+        // getting current location
+        controller.setCurrentLocation();
+        print(controller.currentLocation.toString());
+        return Column(
+          children: [
+            Expanded(
+              flex: 4,
+              child: GoogleMap(
+                onMapCreated: (GoogleMapController controller) {
+                  _controller.complete(controller);
+                },
+                onTap: controller.addCattle,
+                // mapType: MapType.satellite,
+                markers: {
+                  Marker(
+                    markerId: MarkerId("value"),
+                    position: controller.currentLocation,
+                  ),
+                  ..._getFarmMarkers(),
+                },
+                circles: _getFarmCircles(),
+                initialCameraPosition: CameraPosition(
+                  bearing: 192.8334901395799,
+                  target: controller.currentLocation,
+                  tilt: 59.440717697143555,
+                  zoom: 19.151926040649414,
                 ),
-              )),
-        ],
-      ),
+              ),
+            ),
+            Expanded(
+              flex: 3,
+              child: ListView(
+                padding: const EdgeInsets.fromLTRB(8, 2, 8, 10),
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: Text.rich(
+                      TextSpan(
+                        text: 'Farm Dimensions',
+                        style: Theme.of(context).textTheme.bodyLarge!.apply(
+                              fontWeightDelta: 10,
+                            ),
+                        children: [
+                          TextSpan(
+                            text:
+                                '\n(We need just the farm diagonal i.e the south west of the farm and northeast of the farm.)',
+                            style: Theme.of(context).textTheme.labelLarge,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  ...List.generate(
+                    controller.cattleLocations.length,
+                    (index) => ListTile(
+                      title: Text("$index"),
+                      subtitle: Text("${controller.cattleLocations[index]}"),
+                    ),
+                  )
+                  // Text('Selected Location: $_selectedLocation'),
+                ],
+              ),
+            ),
+          ],
+        );
+      }),
       floatingActionButtonLocation: FloatingActionButtonLocation.startFloat,
       floatingActionButton: CustomButton(
         width: MediaQuery.of(context).size.width * .93,
@@ -137,28 +115,30 @@ class _FarmDimensionsState extends State<FarmDimensions> {
     );
   }
 
-  void _setFarmBounds(LatLng location) {
-    print("$location");
-    Provider.of<CattleTracker>(context).addCattle(location);
-  }
+  // void _setFarmBounds(LatLng location) {
+  //   print("$location");
+  //   Provider.of<CattleTracker>(context).addCattle(location);
+  // }
 
-  void _addCattle() async {
-    if (_selectedLocation != null && _farmBounds != null) {
-      Provider.of<CattleTracker>(context, listen: false)
-          .addCattle(_selectedLocation!);
-      setState(() {
-        _selectedLocation = null;
-      });
-    }
-  }
+  // void _addCattle() async {
+  //   if (_selectedLocation != null && _farmBounds != null) {
+  //     Provider.of<CattleTracker>(context, listen: false)
+  //         .addCattle(_selectedLocation!);
+  //     setState(() {
+  //       _selectedLocation = null;
+  //     });
+  //   }
+  // }
 
   Set<Marker> _getFarmMarkers() {
     final cattleTracker = Provider.of<CattleTracker>(context);
     return cattleTracker.cattleLocations
-        .map((location) => Marker(
-              markerId: MarkerId(location.toString()),
-              position: location,
-            ))
+        .map(
+          (location) => Marker(
+            markerId: MarkerId(location.toString()),
+            position: location,
+          ),
+        )
         .toSet();
   }
 
