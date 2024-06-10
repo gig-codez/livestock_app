@@ -12,8 +12,9 @@ class DataService {
 
       StreamedResponse response = await request.send();
 
-      if (response.statusCode == 200) {
+      if (response.statusCode == 200 || response.statusCode == 201) {
         String? result = (await response.stream.bytesToString());
+        // print(result);
         return cordinatesFromJson(result).feeds.first;
       } else {
         return Future.error(response.reasonPhrase ?? "Invalid response");

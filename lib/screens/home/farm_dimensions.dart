@@ -22,7 +22,7 @@ class _FarmDimensionsState extends State<FarmDimensions> {
   @override
   void initState() {
     super.initState();
-    // Provider.of<CattleTracker>(context, listen: false).startTrackingCattle();
+    Provider.of<CattleTracker>(context, listen: false).setCurrentLocation();
   }
 
   @override
@@ -35,10 +35,10 @@ class _FarmDimensionsState extends State<FarmDimensions> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(),
-      body: Consumer<CattleTracker>(builder: (context, controller, c) {
+      body: Consumer<CattleTracker>(builder: (context, c_controller, c) {
         // getting current location
-        controller.setCurrentLocation();
-        print(controller.currentLocation.toString());
+        c_controller.setCurrentLocation();
+        print(c_controller.currentLocation.toString());
         return Column(
           children: [
             Expanded(
@@ -47,19 +47,19 @@ class _FarmDimensionsState extends State<FarmDimensions> {
                 onMapCreated: (GoogleMapController controller) {
                   _controller.complete(controller);
                 },
-                onTap: controller.addCattle,
+                onTap: c_controller.addCattle,
                 // mapType: MapType.satellite,
                 markers: {
                   Marker(
                     markerId: MarkerId("value"),
-                    position: controller.currentLocation,
+                    position: c_controller.currentLocation,
                   ),
                   ..._getFarmMarkers(),
                 },
                 circles: _getFarmCircles(),
                 initialCameraPosition: CameraPosition(
                   bearing: 192.8334901395799,
-                  target: controller.currentLocation,
+                  target: c_controller.currentLocation,
                   tilt: 59.440717697143555,
                   zoom: 19.151926040649414,
                 ),
@@ -89,10 +89,10 @@ class _FarmDimensionsState extends State<FarmDimensions> {
                     ),
                   ),
                   ...List.generate(
-                    controller.cattleLocations.length,
+                    c_controller.cattleLocations.length,
                     (index) => ListTile(
                       title: Text("$index"),
-                      subtitle: Text("${controller.cattleLocations[index]}"),
+                      subtitle: Text("${c_controller.cattleLocations[index]}"),
                     ),
                   )
                   // Text('Selected Location: $_selectedLocation'),
@@ -103,14 +103,41 @@ class _FarmDimensionsState extends State<FarmDimensions> {
         );
       }),
       floatingActionButtonLocation: FloatingActionButtonLocation.startFloat,
-      floatingActionButton: CustomButton(
-        width: MediaQuery.of(context).size.width * .93,
-        onPress: () => Routes.pushPageWithRoute(
-          const TrackCattle(),
+      floatingActionButton: Card(
+        elevation: 0,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: [
+            // Spacer(),
+            // Flexible(
+            //   flex: 3,
+            //   child: CustomButton(
+            //     width: MediaQuery.of(context).size.width * .93,
+            //     onPress: () =>
+            //         Provider.of<CattleTracker>(context, listen: false)
+            //             .cattleLocations
+            //             .clear(),
+            //     text: 'Clear',
+            //     textColor: Theme.of(context).colorScheme.primary,
+            //     // buttonColor: Theme.of(context).colorScheme.primary,
+            //   ),
+            // ),
+            const Spacer(),
+            Flexible(
+              flex: 3,
+              child: CustomButton(
+                width: MediaQuery.of(context).size.width * .93,
+                onPress: () => Routes.pushPageWithRoute(
+                  const TrackCattle(),
+                ),
+                text: 'Continue',
+                textColor: Colors.white,
+                buttonColor: Theme.of(context).colorScheme.primary,
+              ),
+            ),
+            const Spacer(),
+          ],
         ),
-        text: 'Track cattle',
-        textColor: Colors.white,
-        buttonColor: Theme.of(context).colorScheme.primary,
       ),
     );
   }
@@ -137,6 +164,8 @@ class _FarmDimensionsState extends State<FarmDimensions> {
           (location) => Marker(
             markerId: MarkerId(location.toString()),
             position: location,
+            icon: BitmapDescriptor.defaultMarkerWithHue(
+                BitmapDescriptor.hueOrange),
           ),
         )
         .toSet();

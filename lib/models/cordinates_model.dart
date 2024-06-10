@@ -94,7 +94,7 @@ class Feed {
   factory Feed.fromJson(Map<String, dynamic> json) => Feed(
         createdAt:
             DateTime.parse(json["created_at"] ?? DateTime.now().toString()),
-        entryId: json["entry_id"] ?? "0.0",
+        entryId: json["entry_id"] ?? 0,
         field1: json["field1"] ?? "0.0",
         field2: json["field2"] ?? "0.0",
       );

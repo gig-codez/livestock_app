@@ -49,6 +49,7 @@ dependencies:
   flutter_local_notifications: ^17.1.2
   sliding_up_panel: ^2.0.0+1
   poly_geofence_service: ^4.0.0
+  geodesy: ^0.10.2
 
 dev_dependencies:
   flutter_test:
@@ -101,7 +102,7 @@ flutter_native_splash:
     # 640 pixels in diameter.
     # App icon without an icon background: This should be 1152×1152 pixels, and fit within a circle
     # 768 pixels in diameter.
-    #image: assets/android12splash.png
+    image: assets/pngs/image.png
 
     # Splash screen background color.
     #color: "#42a5f5"

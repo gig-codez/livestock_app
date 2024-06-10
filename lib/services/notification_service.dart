@@ -1,7 +1,9 @@
+import 'dart:async';
 import 'dart:io';
-
+import 'dart:typed_data';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-
+import 'package:livestock/controllers/farm_tracker_controller.dart';
+// import '../controllers/farm_tracker_controller.dart';
 import '../exports/exports.dart';
 
 class NotificationService {
@@ -9,6 +11,7 @@ class NotificationService {
   static FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
       FlutterLocalNotificationsPlugin();
   static int id = 0;
+  static Timer? timer;
   static void requestPermission() async {
     if (Platform.isIOS || Platform.isMacOS) {
       await flutterLocalNotificationsPlugin
@@ -35,19 +38,33 @@ class NotificationService {
     }
   }
 
-  static void triggerSampleNotification() async {
-    const DarwinNotificationDetails darwinNotificationDetails =
-        DarwinNotificationDetails(
-      subtitle: 'the subtitle',
+  static void sendNotification(
+      {required String title, required String body}) async {
+    // final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
+    //     FlutterLocalNotificationsPlugin();
+    AndroidNotificationDetails androidPlatformChannelSpecifics =
+        AndroidNotificationDetails(
+      'channel_id',
+      'channel_name',
+      vibrationPattern: Int64List.fromList([100, 400]),
+      channelDescription: 'channel_description',
+      importance: Importance.defaultImportance,
+      priority: Priority.defaultPriority,
+      enableLights: true,
+      color: Colors.blue,
+      colorized: true,
+      fullScreenIntent: true,
     );
-    const NotificationDetails notificationDetails = NotificationDetails(
-        iOS: darwinNotificationDetails, macOS: darwinNotificationDetails);
+
+    NotificationDetails platformChannelSpecifics =
+        NotificationDetails(android: androidPlatformChannelSpecifics);
+
     await flutterLocalNotificationsPlugin.show(
-        id++,
-        'title of notification with a subtitle',
-        'body of notification with a subtitle',
-        notificationDetails,
-        payload: 'item x');
+      id += 1,
+      title,
+      body,
+      platformChannelSpecifics,
+    );
   }
 
   static Future<void> showBigTextNotification() async {
@@ -68,7 +85,7 @@ class NotificationService {
     const NotificationDetails notificationDetails =
         NotificationDetails(android: androidNotificationDetails);
     await flutterLocalNotificationsPlugin.show(
-        id++, 'big text title', 'silent body', notificationDetails);
+        id, 'big text title', 'silent body', notificationDetails);
   }
 
   static Future<void> showInboxNotification() async {
@@ -163,6 +180,7 @@ class NotificationService {
     final List<PendingNotificationRequest> pendingNotificationRequests =
         await flutterLocalNotificationsPlugin.pendingNotificationRequests();
     return showDialog<void>(
+      // ignore: use_build_context_synchronously
       context: context,
       builder: (BuildContext context) => AlertDialog(
         content:
@@ -199,6 +217,77 @@ class NotificationService {
         'ongoing notification title',
         'ongoing notification body',
         notificationDetails);
+  }
+
+// function to track cattle location
+  static void trackCattleMovements(
+      {required double startLatitude, required double startLongitude}) async {
+    var farmController = Provider.of<CattleTracker>(context, listen: false);
+    timer = Timer.periodic(const Duration(seconds: 3), (timer) {
+      double stopLatitude = farmController.currentLocation.latitude;
+      double endLongitude = farmController.currentLocation.longitude;
+      double distanceCovered = Geolocator.distanceBetween(
+          startLatitude, startLongitude, stopLatitude, endLongitude);
+
+      timer = timer;
+      Provider.of<CattleTracker>(context, listen: false).cattleDistance =
+          distanceCovered;
+      print("distance covered => $distanceCovered");
+      if (distanceCovered > farmController.farmSize) {
+        NotificationService.sendNotification(
+          title: 'Livestock',
+          body: 'Animal 1 has moved $distanceCovered away from the farm',
+        );
+      }
+    });
+  }
+
+// stop tracking service
+  static void stopTrackingService() {
+    if (timer != null) {
+      timer?.cancel();
+    }
+  }
+
+  static Future<void> showNotificationWithNoSound() async {
+    const AndroidNotificationDetails androidNotificationDetails =
+        AndroidNotificationDetails('no sound channel', 'no sound name',
+            channelDescription: 'no sound description',
+            playSound: false,
+            importance: Importance.max,
+            priority: Priority.high,
+            onlyAlertOnce: true);
+    const NotificationDetails notificationDetails =
+        NotificationDetails(android: androidNotificationDetails);
+    await flutterLocalNotificationsPlugin.show(
+        id++, 'no sound title', 'no sound body', notificationDetails);
+  }
+
+  static Future<void> showNotificationWithNoVibration() async {
+    const AndroidNotificationDetails androidNotificationDetails =
+        AndroidNotificationDetails('no vibration channel', 'no vibration name',
+            channelDescription: 'no vibration description',
+            importance: Importance.max,
+            priority: Priority.high,
+            onlyAlertOnce: true);
+    const NotificationDetails notificationDetails =
+        NotificationDetails(android: androidNotificationDetails);
+    await flutterLocalNotificationsPlugin.show(
+        id++, 'no vibration title', 'no vibration body', notificationDetails);
+  }
+
+  static Future<void> showNotificationWithCustomSound() async {
+    const AndroidNotificationDetails androidNotificationDetails =
+        AndroidNotificationDetails('custom sound channel', 'custom sound name',
+            channelDescription: 'custom sound description',
+            sound: RawResourceAndroidNotificationSound('slow_spring_board'),
+            importance: Importance.max,
+            priority: Priority.high,
+            onlyAlertOnce: true);
+    const NotificationDetails notificationDetails =
+        NotificationDetails(android: androidNotificationDetails);
+    await flutterLocalNotificationsPlugin.show(
+        id++, 'custom sound title', 'custom sound body', notificationDetails);
   }
 
   static Future<void> repeatNotification() async {
@@ -240,26 +329,29 @@ class NotificationService {
     final int progressId = id;
     const int maxProgress = 5;
     for (int i = 0; i <= maxProgress; i++) {
-      await Future<void>.delayed(const Duration(seconds: 1), () async {
-        final AndroidNotificationDetails androidNotificationDetails =
-            AndroidNotificationDetails('progress channel', 'progress channel',
-                channelDescription: 'progress channel description',
-                channelShowBadge: false,
-                importance: Importance.max,
-                priority: Priority.high,
-                onlyAlertOnce: true,
-                showProgress: true,
-                maxProgress: maxProgress,
-                progress: i);
-        final NotificationDetails notificationDetails =
-            NotificationDetails(android: androidNotificationDetails);
-        await flutterLocalNotificationsPlugin.show(
-            progressId,
-            'progress notification title',
-            'progress notification body',
-            notificationDetails,
-            payload: 'item x');
-      });
+      await Future<void>.delayed(
+        const Duration(seconds: 1),
+        () async {
+          final AndroidNotificationDetails androidNotificationDetails =
+              AndroidNotificationDetails('progress channel', 'progress channel',
+                  channelDescription: 'progress channel description',
+                  channelShowBadge: false,
+                  importance: Importance.max,
+                  priority: Priority.high,
+                  onlyAlertOnce: true,
+                  showProgress: true,
+                  maxProgress: maxProgress,
+                  progress: i);
+          final NotificationDetails notificationDetails =
+              NotificationDetails(android: androidNotificationDetails);
+          await flutterLocalNotificationsPlugin.show(
+              progressId,
+              'progress notification title',
+              'progress notification body',
+              notificationDetails,
+              payload: 'item x');
+        },
+      );
     }
   }
 }
